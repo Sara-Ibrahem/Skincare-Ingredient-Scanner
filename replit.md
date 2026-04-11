@@ -16,6 +16,33 @@ pnpm workspace monorepo using TypeScript. Each package manages its own dependenc
 - **API codegen**: Orval (from OpenAPI spec)
 - **Build**: esbuild (CJS bundle)
 
+## Artifacts
+
+### SkinScan — Mobile App (`artifacts/mobile`)
+
+React Native + Expo mobile app for the senior project:
+**"Automated Extraction of Skincare Product Ingredients Using Image Processing and OCR"**
+
+#### Screens
+| File | Route | Purpose |
+|---|---|---|
+| `app/(tabs)/index.tsx` | `/` | Home screen — entry point with Camera & Gallery CTAs |
+| `app/camera.tsx` | `/camera` | Camera capture screen using `expo-image-picker` |
+| `app/gallery.tsx` | `/gallery` | Gallery picker screen using `expo-image-picker` |
+| `app/preview.tsx` | `/preview` | Image preview screen before extraction |
+| `app/results.tsx` | `/results` | OCR results screen (placeholder — OCR not yet implemented) |
+
+#### Key decisions
+- **No backend, no database, no auth** — frontend-only by design
+- **expo-image-picker** used for both camera and gallery (Expo Go compatible)
+- **Navigation**: Expo Router file-based Stack (no tabs needed beyond the root shell)
+- **Color palette**: Sage green (`#4a7c59`) on white — clean, health-inspired
+- **Fonts**: Inter (400/500/600/700) pre-loaded
+
+#### OCR integration points
+- `app/results.tsx` — add OCR call here, replacing the `OCRPlaceholder` component
+- `app/preview.tsx` — `handleExtract()` passes `uri` to the results route
+
 ## Key Commands
 
 - `pnpm run typecheck` — full typecheck across all packages
