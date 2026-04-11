@@ -73,7 +73,7 @@ export default function HomeScreen() {
           <Ionicons
             name="leaf"
             size={48}
-            color="#ffffff"
+            color={colors.primaryForeground}
             style={{ zIndex: 1 }}
           />
         </View>
