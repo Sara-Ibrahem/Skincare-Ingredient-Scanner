@@ -16,18 +16,24 @@ import { router } from "expo-router";
 import React from "react";
 import {
   Image,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
   Text,
   View,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useColors } from "@/hooks/useColors";
 
 export default function HomeScreen() {
   const colors = useColors();
+  const insets = useSafeAreaInsets();
+  // Proper top padding for all platforms:
+  // - Native: actual status-bar/notch inset + 24px breathing room
+  // - Web (iframe): insets.top = 0, use a fixed 48px for visual balance
+  const topPadding = Math.max(insets.top + 24, Platform.OS === "web" ? 48 : 32);
 
   function handleCamera() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -40,7 +46,7 @@ export default function HomeScreen() {
   }
 
   return (
-    <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]}>
+    <View style={[styles.safeArea, { backgroundColor: colors.background }]}>
       {/* Background gradient for atmosphere */}
       <LinearGradient
         colors={[colors.accent, colors.background]}
@@ -50,7 +56,7 @@ export default function HomeScreen() {
       />
 
       <ScrollView
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[styles.scrollContent, { paddingTop: topPadding }]}
         showsVerticalScrollIndicator={false}
       >
         {/* App logo — PNG image, no vector icons needed */}
@@ -166,7 +172,7 @@ export default function HomeScreen() {
           No data is stored or uploaded. Everything stays on your device.
         </Text>
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }
 
@@ -224,7 +230,6 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingHorizontal: 24,
-    paddingTop: 24,
     paddingBottom: 32,
     alignItems: "center",
   },
