@@ -30,7 +30,11 @@ export default function HomeScreen() {
 
   // Web-specific top inset — native safe areas handle this on iOS/Android
   const topPadding = Platform.OS === "web" ? 67 : insets.top + 16;
-  const bottomPadding = Platform.OS === "web" ? 34 : insets.bottom + 16;
+  // Extra padding clears the absolute-positioned tab bar:
+  //   web: tab bar is 84px, add standard 34px web inset = 118px
+  //   native: tab bar is 60px + device safe area bottom + breathing room
+  const bottomPadding =
+    Platform.OS === "web" ? 118 : insets.bottom + 90;
 
   function handleCamera() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -59,14 +63,19 @@ export default function HomeScreen() {
         ]}
         showsVerticalScrollIndicator={false}
       >
-        {/* App icon placeholder / branding */}
+        {/* App icon / branding — leaf icon on green rounded square */}
         <View
           style={[
             styles.iconContainer,
             { backgroundColor: colors.primary, borderRadius: colors.radius + 6 },
           ]}
         >
-          <Ionicons name="leaf" size={48} color={colors.primaryForeground} />
+          <Ionicons
+            name="leaf"
+            size={48}
+            color="#ffffff"
+            style={{ zIndex: 1 }}
+          />
         </View>
 
         {/* Title & subtitle */}
@@ -78,7 +87,7 @@ export default function HomeScreen() {
         </Text>
         <Text style={[styles.description, { color: colors.mutedForeground }]}>
           Capture or upload a photo of a skincare product label to automatically
-          extract and analyze its ingredients.
+          extract and display its ingredients.
         </Text>
 
         {/* Step guide */}

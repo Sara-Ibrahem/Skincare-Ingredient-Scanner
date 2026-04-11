@@ -38,15 +38,23 @@ function ClassicTabLayout() {
     <Tabs
       screenOptions={{
         tabBarActiveTintColor: colors.primary,
-        tabBarInactiveTintColor: colors.mutedForeground,
+        // Use a darker muted color so icon is clearly visible against light background
+        tabBarInactiveTintColor: colors.foreground,
         headerShown: false,
         tabBarStyle: {
           position: "absolute",
-          backgroundColor: isIOS ? "transparent" : colors.background,
-          borderTopWidth: isWeb ? 1 : 0,
+          // Always set an explicit background — avoids invisible icons on Android
+          backgroundColor: isIOS ? "transparent" : colors.card,
+          borderTopWidth: 1,
           borderTopColor: colors.border,
-          elevation: 0,
-          ...(isWeb ? { height: 84 } : {}),
+          elevation: 4,
+          // Explicit height so the bar is never too small
+          height: isWeb ? 84 : 60,
+        },
+        tabBarLabelStyle: {
+          fontSize: 11,
+          fontFamily: "Inter_500Medium",
+          marginBottom: 4,
         },
         tabBarBackground: () =>
           isIOS ? (
@@ -55,14 +63,15 @@ function ClassicTabLayout() {
               tint={isDark ? "dark" : "light"}
               style={StyleSheet.absoluteFill}
             />
-          ) : isWeb ? (
+          ) : (
+            // Android + Web: solid card background so icons are always visible
             <View
               style={[
                 StyleSheet.absoluteFill,
-                { backgroundColor: colors.background },
+                { backgroundColor: colors.card },
               ]}
             />
-          ) : null,
+          ),
       }}
     >
       <Tabs.Screen
@@ -73,7 +82,7 @@ function ClassicTabLayout() {
             isIOS ? (
               <SymbolView name="house" tintColor={color} size={24} />
             ) : (
-              <Feather name="home" size={22} color={color} />
+              <Feather name="home" size={24} color={color} />
             ),
         }}
       />
