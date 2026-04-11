@@ -7,7 +7,7 @@
  *   2. "Open Gallery" → navigates to the gallery picker screen
  */
 
-import { Feather, MaterialCommunityIcons } from "@expo/vector-icons";
+import { Feather, FontAwesome5 } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
@@ -75,9 +75,9 @@ export default function HomeScreen() {
               : undefined,
           ]}
         >
-          <MaterialCommunityIcons
+          <FontAwesome5
             name="leaf"
-            size={48}
+            size={40}
             color={colors.primaryForeground}
           />
         </View>
