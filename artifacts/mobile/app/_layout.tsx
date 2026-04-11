@@ -1,12 +1,13 @@
 /**
  * Root layout — wires up all providers and defines the full navigation stack.
+ * Pure Stack navigation — no bottom tabs.
  *
  * Stack screens:
- *   (tabs)/index  → Home screen (tab group, hidden header)
- *   camera        → Camera capture screen
- *   gallery       → Gallery picker screen
- *   preview       → Image preview screen
- *   results       → OCR results screen
+ *   index    → Home screen (no header)
+ *   camera   → Camera capture screen
+ *   gallery  → Gallery picker screen
+ *   preview  → Image preview screen
+ *   results  → OCR results screen
  */
 
 import {
