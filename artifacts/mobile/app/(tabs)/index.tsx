@@ -7,7 +7,7 @@
  *   2. "Open Gallery" → navigates to the gallery picker screen
  */
 
-import { Feather, Ionicons } from "@expo/vector-icons";
+import { Feather, MaterialCommunityIcons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
@@ -70,11 +70,10 @@ export default function HomeScreen() {
             { backgroundColor: colors.primary, borderRadius: colors.radius + 6 },
           ]}
         >
-          <Ionicons
+          <MaterialCommunityIcons
             name="leaf"
             size={48}
             color={colors.primaryForeground}
-            style={{ zIndex: 1 }}
           />
         </View>
 
@@ -250,12 +249,12 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     marginBottom: 16,
-    // Shadow
+    // iOS shadow only — elevation on Android creates a hardware layer that
+    // can prevent child icon glyphs from rendering.
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.12,
     shadowRadius: 12,
-    elevation: 6,
   },
   title: {
     fontSize: 34,

@@ -9,8 +9,7 @@ import { BlurView } from "expo-blur";
 import { isLiquidGlassAvailable } from "expo-glass-effect";
 import { Tabs } from "expo-router";
 import { Icon, Label, NativeTabs } from "expo-router/unstable-native-tabs";
-import { SymbolView } from "expo-symbols";
-import { Feather } from "@expo/vector-icons";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
 import React from "react";
 import { Platform, StyleSheet, View, useColorScheme } from "react-native";
 
@@ -53,7 +52,6 @@ function ClassicTabLayout() {
         },
         tabBarLabelStyle: {
           fontSize: 11,
-          fontFamily: "Inter_500Medium",
           marginBottom: 4,
         },
         tabBarBackground: () =>
@@ -78,12 +76,11 @@ function ClassicTabLayout() {
         name="index"
         options={{
           title: "Home",
-          tabBarIcon: ({ color }) =>
-            isIOS ? (
-              <SymbolView name="house" tintColor={color} size={24} />
-            ) : (
-              <Feather name="home" size={24} color={color} />
-            ),
+          // Use MaterialCommunityIcons for all platforms in ClassicTabLayout.
+          // SymbolView (SF Symbols) is reserved for the NativeTabs / iOS-26 path above.
+          tabBarIcon: ({ color }) => (
+            <MaterialCommunityIcons name="home" size={26} color={color} />
+          ),
         }}
       />
     </Tabs>
