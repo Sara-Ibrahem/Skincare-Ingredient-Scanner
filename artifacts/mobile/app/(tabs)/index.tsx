@@ -68,6 +68,11 @@ export default function HomeScreen() {
           style={[
             styles.iconContainer,
             { backgroundColor: colors.primary, borderRadius: colors.radius + 6 },
+            // Web shadow — elevation is omitted on native to avoid Android hardware-layer
+            // rendering issues; use CSS boxShadow on web instead.
+            Platform.OS === "web"
+              ? ({ boxShadow: "0px 4px 12px rgba(0,0,0,0.12)" } as object)
+              : undefined,
           ]}
         >
           <MaterialCommunityIcons
