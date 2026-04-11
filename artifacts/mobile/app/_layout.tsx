@@ -47,8 +47,8 @@ function RootLayoutNav() {
         contentStyle: { backgroundColor: colors.background },
       }}
     >
-      {/* Home — the tab group (no header, tabs handle it) */}
-      <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+      {/* Home screen — pure stack, no tabs */}
+      <Stack.Screen name="index" options={{ headerShown: false }} />
 
       {/* Camera capture screen */}
       <Stack.Screen

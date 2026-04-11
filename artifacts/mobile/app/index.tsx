@@ -2,39 +2,32 @@
  * Home Screen
  *
  * Entry point of the SkinScan app.
- * Displays the app title, a brief description, and two action buttons:
+ * Displays the app logo, title, a brief description, and two action buttons:
  *   1. "Use Camera" → navigates to the camera capture screen
  *   2. "Open Gallery" → navigates to the gallery picker screen
+ *
+ * Navigation is pure Stack — no bottom tabs.
  */
 
-import { Feather, FontAwesome5 } from "@expo/vector-icons";
+import { Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
 import React from "react";
 import {
-  Platform,
+  Image,
   Pressable,
   ScrollView,
   StyleSheet,
   Text,
   View,
 } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 import { useColors } from "@/hooks/useColors";
 
 export default function HomeScreen() {
   const colors = useColors();
-  const insets = useSafeAreaInsets();
-
-  // Web-specific top inset — native safe areas handle this on iOS/Android
-  const topPadding = Platform.OS === "web" ? 67 : insets.top + 16;
-  // Extra padding clears the absolute-positioned tab bar:
-  //   web: tab bar is 84px, add standard 34px web inset = 118px
-  //   native: tab bar is 60px + device safe area bottom + breathing room
-  const bottomPadding =
-    Platform.OS === "web" ? 118 : insets.bottom + 90;
 
   function handleCamera() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -47,7 +40,7 @@ export default function HomeScreen() {
   }
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]}>
       {/* Background gradient for atmosphere */}
       <LinearGradient
         colors={[colors.accent, colors.background]}
@@ -57,30 +50,15 @@ export default function HomeScreen() {
       />
 
       <ScrollView
-        contentContainerStyle={[
-          styles.scrollContent,
-          { paddingTop: topPadding, paddingBottom: bottomPadding },
-        ]}
+        contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        {/* App icon / branding — leaf icon on green rounded square */}
-        <View
-          style={[
-            styles.iconContainer,
-            { backgroundColor: colors.primary, borderRadius: colors.radius + 6 },
-            // Web shadow — elevation is omitted on native to avoid Android hardware-layer
-            // rendering issues; use CSS boxShadow on web instead.
-            Platform.OS === "web"
-              ? ({ boxShadow: "0px 4px 12px rgba(0,0,0,0.12)" } as object)
-              : undefined,
-          ]}
-        >
-          <FontAwesome5
-            name="leaf"
-            size={40}
-            color={colors.primaryForeground}
-          />
-        </View>
+        {/* App logo — PNG image, no vector icons needed */}
+        <Image
+          source={require("../assets/images/logo.png")}
+          style={styles.logo}
+          resizeMode="contain"
+        />
 
         {/* Title & subtitle */}
         <Text style={[styles.title, { color: colors.foreground }]}>
@@ -188,7 +166,7 @@ export default function HomeScreen() {
           No data is stored or uploaded. Everything stays on your device.
         </Text>
       </ScrollView>
-    </View>
+    </SafeAreaView>
   );
 }
 
@@ -241,25 +219,20 @@ function Divider({ colors }: { colors: ColorTokens }) {
 // ─── Styles ──────────────────────────────────────────────────────────────────
 
 const styles = StyleSheet.create({
-  container: {
+  safeArea: {
     flex: 1,
   },
   scrollContent: {
     paddingHorizontal: 24,
+    paddingTop: 24,
+    paddingBottom: 32,
     alignItems: "center",
   },
-  iconContainer: {
+  logo: {
     width: 96,
     height: 96,
-    alignItems: "center",
-    justifyContent: "center",
+    borderRadius: 20,
     marginBottom: 16,
-    // iOS shadow only — elevation on Android creates a hardware layer that
-    // can prevent child icon glyphs from rendering.
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.12,
-    shadowRadius: 12,
   },
   title: {
     fontSize: 34,
@@ -289,7 +262,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     padding: 4,
     marginBottom: 28,
-    // Shadow
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.06,
@@ -332,7 +304,6 @@ const styles = StyleSheet.create({
     width: "100%",
     paddingVertical: 16,
     marginBottom: 12,
-    // Shadow
     shadowColor: "#4a7c59",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
