@@ -1,16 +1,8 @@
-/**
- * Results Screen
- *
- * PRIMARY OCR:  Google ML Kit (react-native-mlkit-ocr) — on-device, offline
- * FALLBACK OCR: Tesseract.js — used if ML Kit is unavailable
- */
-
 import { Feather, Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { Image } from "expo-image";
 import { router, useLocalSearchParams } from "expo-router";
 import React, { useEffect, useState } from "react";
-const ingredientsData: Record<string, string> = require("../assets/ingredients.json");
 import {
   ActivityIndicator,
   Platform,
@@ -24,44 +16,13 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useColors } from "@/hooks/useColors";
 
-// ─── OCR: ML Kit (primary) ────────────────────────────────────────────────────
+const ingredientsData: Record<string, string> = require("../assets/ingredients.json");
+
 let MlkitOcr: any = null;
 try {
   MlkitOcr = require("react-native-mlkit-ocr").default;
-} catch {
-  // Native module not available — will fall back to Tesseract
-}
-const INGREDIENT_CORRECTIONS: Record<string, string> = {
-  "GLYOOL": "GLYCOL",
-  "TETRASOORUM": "TETRASODIUM",
-  "AQUA": "WATER",
-  "HYALURONATE": "HYALURONIC ACID",
-  "EXTRACTL": "EXTRACT",
-};
+} catch {}
 
-// JSON dosyasını import et (dosya yoluna dikkat)
-
-function cleanAndCorrect(text: string): string {
-  let cleaned = text.toUpperCase().trim();
-  
-  // 1. Önce tam eşleşme kontrolü (En güvenlisi)
-  if (ingredientsData[cleaned] !== undefined) {
-    return ingredientsData[cleaned];
-  }
-
-  // 2. Parçalı eşleşme kontrolü (AQUAAQUAEAU gibi durumlar için)
-  for (const key of Object.keys(ingredientsData)) {
-    if (cleaned.includes(key) && key.length > 3) {
-      // Eğer JSON'daki değer boşsa (""), bu bir çöp kelimedir
-      if (ingredientsData[key] === "") return "";
-      return ingredientsData[key];
-    }
-  }
-
-  return cleaned;
-}
-
-// ─── Types ────────────────────────────────────────────────────────────────────
 type OcrEngine = "mlkit" | "tesseract" | null;
 type OcrStatus = "idle" | "loading" | "success" | "error";
 
@@ -73,11 +34,42 @@ interface OcrState {
   error: string | null;
 }
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
+function fixHyphenatedLineBreaks(text: string): string {
+  return text.replace(/([A-Z])-\n([A-Z])/g, "$1$2").replace(/([a-z])-\n([a-z])/g, "$1$2");
+}
+
+function cleanAndCorrect(raw: string): string {
+  let s = raw.toUpperCase().replace(/\s+/g, " ").trim();
+
+  if (s.length < 2) return "";
+  if (/^\d+$/.test(s)) return "";
+  if (/\d{3,}/.test(s)) return "";
+  if (/^\d/.test(s)) return "";
+  if (/^CI\s*\d+/.test(s)) return "";
+  if (s.split(" ").length > 7) return "";
+
+  if (ingredientsData[s] !== undefined) {
+    return ingredientsData[s] === "" ? "" : ingredientsData[s];
+  }
+
+  for (const key of Object.keys(ingredientsData)) {
+    if (key.length > 4 && s === key) {
+      return ingredientsData[key] === "" ? "" : ingredientsData[key];
+    }
+  }
+
+  return s;
+}
+
 function parseIngredients(rawText: string): string[] {
-  const lower = rawText.toLowerCase();
-  const startKeywords = ["ingredients:", "içindekiler:", "inci:", "ingredients :"];
-  
+  const fixed = fixHyphenatedLineBreaks(rawText);
+  const lower = fixed.toLowerCase();
+
+  const startKeywords = [
+    "ingredients:", "ingredients /ingredients:", "ingredients/ingredients:",
+    "ingredient:", "inci:", "icindekiler:", "ingredients :"
+  ];
+
   let startIdx = -1;
   for (const kw of startKeywords) {
     const idx = lower.indexOf(kw);
@@ -87,33 +79,52 @@ function parseIngredients(rawText: string): string[] {
     }
   }
 
-  // Eğer anahtar kelime yoksa metnin başından başla ama gürültü riskini unutma
-  let section = startIdx !== -1 ? rawText.slice(startIdx) : rawText;
+  let section = startIdx !== -1 ? fixed.slice(startIdx) : fixed;
+  section = section.replace(/^[\s/]*(?:INGR[EÉ]DIENTS?[\s:/]*)+/i, "");
+  const firstLine = section.split(/,|\n/)[0];
+  const adjustedSection = firstLine.length > 60 ? section.slice(firstLine.indexOf(" ") + 1) : section;
 
-  // Durdurma anahtar kelimeleri (Warnings, Directions vb. sızmasın diye)
- // Genişletilmiş durdurma kelimeleri (Bozuk OCR okumalarını da yakalar)
-const stopKeywords = [
-    "produced by", "warning", "direction", "how to use", "uyarı", "dist. by", "kullanım",
-    "external use", "forexternal", "children", "reach out", "veep out", "keep out", "rash", "naturally-derived"
+  const stopKeywords = [
+    "produced by", "manufactured by", "distributed by", "imported by",
+    "warning", "warnings", "caution",
+    "directions:", "how to use",
+    "naturally-derived", "naturally derived",
+    "for external use", "external use only",
+    "keep out", "keep away",
+    "if rash", "if irritation", "discontinue",
+    "nutrition facts", "valeur nutritive", "supplement facts",
+    "calories", "total fat", "total carb", "serving size",
+    "trademark", "registered trademark", "copyright",
+    "www.", ".com", ".net", ".org",
+    "tel:", "phone:", "fax:",
+    "no lot", "lot no", "batch no",
+    "refrigerate", "store in", "store at",
+    "questions?", "visit us at",
+    "uyari", "kullanim", "saklayin",
+    "contient :", "ingrédients :"
   ];
 
-  let endIdx = section.length;
+let endIdx = adjustedSection.length;
   for (const kw of stopKeywords) {
-    const idx = section.toLowerCase().indexOf(kw);
+    const idx = adjustedSection.toLowerCase().indexOf(kw);
+
     if (idx !== -1 && idx < endIdx) endIdx = idx;
   }
 
-  const oneLineSection = section.slice(0, endIdx).replace(/\n/g, ", ");
+  const cleanSection = adjustedSection.slice(0, endIdx);
 
-  return oneLineSection
+  const joined = cleanSection.replace(/\n/g, " ");
+
+  return joined
     .split(/,|•|;|\*/)
-    .map(s => cleanAndCorrect(s.replace(/[^a-zA-ZÀ-ÿ0-9\s\-(). ]/g, "")))
-    .filter(s => {
-      const isHeaderGarbage = s.includes("AQUA") && oneLineSection.toLowerCase().indexOf("ingredients") < 10;
-      return s.length > 2 && !isHeaderGarbage && !/^\d+$/.test(s) && s !== "DELETE_ME";
-    })
+    .map((s) => cleanAndCorrect(s.replace(/[^a-zA-ZÀ-ÿ0-9\s\-(). /]/g, "")))
+    .filter((s) => s.length > 1)
+    .filter((s, idx, arr) =>
+      arr.findIndex((x) => x.trim() === s.trim()) === idx
+    )
     .slice(0, 50);
 }
+
 async function runMlKitOcr(uri: string): Promise<string> {
   if (!MlkitOcr) throw new Error("ML Kit not available");
   const result = await MlkitOcr.detectFromUri(uri);
@@ -126,7 +137,6 @@ async function runTesseractOcr(uri: string): Promise<string> {
   return data.text;
 }
 
-// ─── Main Screen ──────────────────────────────────────────────────────────────
 export default function ResultsScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
@@ -146,7 +156,6 @@ export default function ResultsScreen() {
   async function runOcr(imageUri: string) {
     setOcr({ status: "loading", ingredients: [], rawText: null, engine: null, error: null });
 
-    // 1️⃣ ML Kit (primary)
     if (MlkitOcr) {
       try {
         const text = await runMlKitOcr(imageUri);
@@ -157,7 +166,6 @@ export default function ResultsScreen() {
       }
     }
 
-    // 2️⃣ Tesseract.js (fallback)
     try {
       const text = await runTesseractOcr(imageUri);
       setOcr({ status: "success", ingredients: parseIngredients(text), rawText: text, engine: "tesseract", error: null });
@@ -177,7 +185,6 @@ export default function ResultsScreen() {
         contentContainerStyle={[styles.scrollContent, { paddingBottom: bottomPadding }]}
         showsVerticalScrollIndicator={false}
       >
-        {/* Thumbnail */}
         {uri && (
           <View style={[styles.thumbnailContainer, { backgroundColor: colors.muted, borderRadius: colors.radius, borderColor: colors.border }]}>
             <Image source={{ uri }} style={styles.thumbnail} contentFit="cover" transition={200} />
@@ -188,7 +195,6 @@ export default function ResultsScreen() {
           </View>
         )}
 
-        {/* OCR Area */}
         {ocr.status === "idle" || ocr.status === "loading" ? (
           <OcrLoadingCard colors={colors} />
         ) : ocr.status === "error" ? (
@@ -197,7 +203,6 @@ export default function ResultsScreen() {
           <OcrResultCard colors={colors} ingredients={ocr.ingredients} rawText={ocr.rawText!} engine={ocr.engine!} />
         )}
 
-        {/* Info card */}
         {ocr.status !== "success" && (
           <View style={[styles.infoCard, { backgroundColor: colors.card, borderRadius: colors.radius, borderColor: colors.border }]}>
             <Text style={[styles.infoTitle, { color: colors.foreground }]}>What happens next?</Text>
@@ -208,7 +213,6 @@ export default function ResultsScreen() {
           </View>
         )}
 
-        {/* Scan again */}
         <Pressable
           testID="btn-scan-again"
           style={({ pressed }) => [styles.scanAgainButton, { backgroundColor: colors.primary, borderRadius: colors.radius, opacity: pressed ? 0.85 : 1 }]}
@@ -222,7 +226,6 @@ export default function ResultsScreen() {
   );
 }
 
-// ─── Sub-components ───────────────────────────────────────────────────────────
 type ColorTokens = ReturnType<typeof useColors>;
 
 function OcrLoadingCard({ colors }: { colors: ColorTokens }) {
@@ -308,7 +311,6 @@ function InfoRow({ icon, text, colors }: { icon: React.ComponentProps<typeof Fea
   );
 }
 
-// ─── Styles ───────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
   container: { flex: 1 },
   scrollContent: { paddingHorizontal: 20, paddingTop: 20, gap: 16 },
